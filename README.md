@@ -5,7 +5,10 @@
 go run main.go
 ```
 ### API TESTING 
-
+POST:8001
+```http
+http://localhost:8001/
+```
 #### Sample Input 1:
 ```bash
 {
@@ -32,7 +35,7 @@ go run main.go
 "uatrt2": "string",
 "uatrk3": "age",
 "uatrv3": "32",
-"uatrt3": "integer",
+"uatrt3": "integer"
 }
 ```
 #### Sample Output 1:

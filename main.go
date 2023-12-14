@@ -144,7 +144,7 @@ func main() {
     
 	ReqChannel := make(chan HTTPRequest)
     go worker(ReqChannel)
-	http.HandleFunc("/receive", func(w http.ResponseWriter, r *http.Request) { 
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { 
 			
 		    defer r.Body.Close()
             body, err := ioutil.ReadAll(r.Body)
