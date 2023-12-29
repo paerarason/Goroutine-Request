@@ -6,7 +6,8 @@ go run main.go
 ```
 ### API TESTING 
 POST:8001
-```http
+```
+http
 http://localhost:8001/
 ```
 #### Sample Input 1:
@@ -228,4 +229,4 @@ http://localhost:8001/
 ```
 
 #### Webhook Response
-![OUTPUT 3](static/Output3.png)
+![OUTPUT 3](static/output3.png)
