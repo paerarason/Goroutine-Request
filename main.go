@@ -145,7 +145,6 @@ func main() {
 	ReqChannel := make(chan HTTPRequest)
     go worker(ReqChannel)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { 
-			
 		    defer r.Body.Close()
             body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
@@ -153,11 +152,11 @@ func main() {
 				return
 			}
 			r.Body = ioutil.NopCloser(strings.NewReader(string(body)))
-
+        
 		request:=HTTPRequest{
 				Request:r,
 				Info:"INCOMMING REQUEST",
-				}
+		   }
 		    ReqChannel <-request
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("Request Recieved"))
