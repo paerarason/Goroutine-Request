@@ -7,6 +7,8 @@ import (
 	"strings"
 	"log"
 	"io/ioutil"
+	"sync"
+	"context"
 )
 
 //Attibute struct
@@ -28,38 +30,6 @@ type OutgoingData struct {
 	ScreenSize string `json:"screen_size"`
 	Attributes map[string]attribute `json:"attributes"`
 	UserAttributes map[string]attribute `json:"traits"`
-}
-
-type HTTPRequest struct {
-	Request *http.Request
-	Info    string 
-}
-
-
-
-//worker Go-routine 
-func worker(ReqChannel <-chan HTTPRequest) {
-	log.Println("Worker started....")
-	for {
-	data := <-ReqChannel
-	body, err := ioutil.ReadAll(data.Request.Body)
-		if err != nil {
-			fmt.Println("Failed to read request body:", err)
-			continue
-		}
-		defer data.Request.Body.Close()
-
-		// Process the request body
-		var bodyData map[string]interface{}
-		err = json.Unmarshal(body, &bodyData)
-		if err != nil {
-			fmt.Println("Failed to decode request body:", err)
-			continue
-		}
-	transformedData := transformData(bodyData)
-	sendToWebhook(transformedData)
-	log.Println("Worker Finished....")
-}
 }
 
 func KeySearch(data map[string]interface{},searchKey string ) string{
@@ -128,7 +98,7 @@ func sendToWebhook(data OutgoingData) {
 	return
 	}
 
-	URL := "https://webhook.site/1f79959d-004c-41ad-b968-44d8e914b4a6" 
+	URL := "https://webhook.site/197aa273-0162-43d0-9234-40adf4dfff58" 
 	resp, err := http.Post(URL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Println("ERROR",err)
@@ -141,26 +111,37 @@ func sendToWebhook(data OutgoingData) {
 
 
 func main() {
-    
-	ReqChannel := make(chan HTTPRequest)
-    go worker(ReqChannel)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { 
-		    defer r.Body.Close()
-            body, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				http.Error(w, "Failed to read request body", http.StatusInternalServerError)
-				return
-			}
-			r.Body = ioutil.NopCloser(strings.NewReader(string(body)))
-        
-		request:=HTTPRequest{
-				Request:r,
-				Info:"INCOMMING REQUEST",
-		   }
-		    ReqChannel <-request
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Request Recieved"))
-		})
+		defer r.Body.Close()
+		ctx:=context.Background()
+		bodyBytes, err := ioutil.ReadAll(r.Body)
+		if err!=nil{
+			log.Println("Failed to decode request body:", err)
+		}
+		ctx=context.WithValue(ctx,"body",bodyBytes)
+        var wg sync.WaitGroup
 
+		wg.Add(1)
+		go func (ctx context.Context,w http.ResponseWriter){
+			  var bodyData map[string]interface{}
+			  if body := ctx.Value("body"); body!= nil {
+			  err := json.Unmarshal( body.([]byte), &bodyData)
+			  if err != nil {
+				  	log.Println("Failed to decode request body:", err)
+			     }
+				 transformedData := transformData(bodyData)
+				 sendToWebhook(transformedData)
+				 w.WriteHeader(http.StatusOK)
+				 w.Write([]byte("Request Recieved"))	
+				 wg.Done()
+				return
+		      }
+			 log.Println("BODY EMPTY")
+		}(ctx,w)
+        //GONE
+	    wg.Wait()
+	    })
+       
+		
 	http.ListenAndServe(":8001", nil)
 }
